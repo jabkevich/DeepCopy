@@ -1,5 +1,7 @@
 import com.example.DeepCopy;
+
 import entities.Person;
+import entities.PersonWithoutConstructors;
 import org.junit.jupiter.api.Test;
 import utils.PersonUtils;
 
@@ -148,6 +150,14 @@ public class DeepCopyMapHardDataTests {
     public void testAbstractMapSimpleImmutableEntry() throws Exception {
         AbstractMap.SimpleImmutableEntry<String, Person> entry = new AbstractMap.SimpleImmutableEntry<>("a", PersonUtils.getTestPerson());
         AbstractMap.SimpleImmutableEntry<String, Person> copy = (AbstractMap.SimpleImmutableEntry<String, Person>) DeepCopy.deepCopy(entry);
+        assertNotSame(entry, copy);
+        assertEquals(entry, copy);
+    }
+
+    @Test
+    public void testTest() throws Exception {
+        AbstractMap.SimpleImmutableEntry<String, PersonWithoutConstructors> entry = new AbstractMap.SimpleImmutableEntry<>("a", PersonUtils.getTestPersonWithoutContructors());
+        AbstractMap.SimpleImmutableEntry<String, PersonWithoutConstructors> copy = (AbstractMap.SimpleImmutableEntry<String, PersonWithoutConstructors>) DeepCopy.deepCopy(entry);
         assertNotSame(entry, copy);
         assertEquals(entry, copy);
     }

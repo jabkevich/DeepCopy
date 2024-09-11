@@ -1,6 +1,9 @@
 package utils;
 
 import entities.*;
+import list.CustomList;
+import list.CustomQueue;
+import map.CustomMap;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -67,6 +70,36 @@ public class PersonUtils {
 
     public static Person getTestPerson() {
         Person person = new Person(getRandomAge(), "Alice");
+        person.setViews(getViewers());
+        person.setNotifications(getNotifications());
+        person.setSubscribers(getSubscribers());
+        person.setMessages(getMessages());
+        person.setContacts(getContacts());
+
+        CustomMap<String, Person> customMap = new CustomMap<>();
+
+        customMap.put("key1", new Person(getRandomAge(), "Bob"));
+        customMap.put("key2", new Person(getRandomAge(), "Alice"));
+        person.setCustomMap(customMap);
+
+        CustomList<Person> customList = new CustomList<>();
+        customList.add(new Person(getRandomAge(), "Bob"));
+        customList.add(new Person(getRandomAge(), "Alice"));
+        person.setCustomList(customList);
+
+        CustomQueue<Notification> customQueue = new CustomQueue<>();
+
+        customQueue.offer(new Notification("random age: " + getRandomAge()));
+        customQueue.offer(new Notification("random age: " + getRandomAge()));
+
+        person.setCustomQueue(customQueue);
+
+        return person;
+    }
+    public static PersonWithoutConstructors getTestPersonWithoutContructors() {
+        PersonWithoutConstructors person = new PersonWithoutConstructors();
+        person.setAge(getRandomAge());
+        person.setName("Alice");
         person.setViews(getViewers());
         person.setNotifications(getNotifications());
         person.setSubscribers(getSubscribers());

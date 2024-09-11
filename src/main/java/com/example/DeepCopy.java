@@ -1,27 +1,27 @@
 package com.example;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
  * @author jabkevich
  */
-public class DeepCopy {
+final public class DeepCopy {
 
     public static Object deepCopy(Object original) throws
             IllegalAccessException,
             InstantiationException,
             InvocationTargetException,
-            NoSuchMethodException
-    {
+            NoSuchMethodException {
         Map<Object, Object> copiedObjects = new IdentityHashMap<>();
         return deepCopyRecursive(original, copiedObjects);
     }
 
-    private static Object deepCopyRecursive(Object original, Map<Object, Object> copiedObjects) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    private static Object deepCopyRecursive(
+            Object original,
+            Map<Object, Object> copiedObjects
+    ) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+
         if (original == null) {
             return null;
         }
@@ -50,35 +50,6 @@ public class DeepCopy {
             return copy;
         }
 
-        if (clazz.isArray()) {
-            int length = Array.getLength(original);
-            Object arrayCopy = Array.newInstance(clazz.getComponentType(), length);
-            copiedObjects.put(original, arrayCopy);
-
-            for (int i = 0; i < length; i++) {
-                Array.set(arrayCopy, i, deepCopyRecursive(Array.get(original, i), copiedObjects));
-            }
-            return arrayCopy;
-        }
-
-        if (EnumSet.class.isAssignableFrom(clazz)) {
-            EnumSet<?> originalEnumSet = (EnumSet<?>) original;
-            EnumSet<?> copyEnumSet = EnumSet.copyOf(originalEnumSet);
-            copiedObjects.put(original, copyEnumSet);
-            return copyEnumSet;
-        }
-
-        if (Collection.class.isAssignableFrom(clazz)) {
-            Collection<?> originalCollection = (Collection<?>) original;
-            Collection<Object> copyCollection = createCollectionInstance(clazz, originalCollection.size());
-            copiedObjects.put(original, copyCollection);
-
-            for (Object item : originalCollection) {
-                copyCollection.add(deepCopyRecursive(item, copiedObjects));
-            }
-            return copyCollection;
-        }
-
         if (Map.class.isAssignableFrom(clazz)) {
             Map<?, ?> originalMap = (Map<?, ?>) original;
             Map<Object, Object> copyMap = createMapInstance(clazz);
@@ -92,6 +63,37 @@ public class DeepCopy {
             return copyMap;
         }
 
+        if (EnumSet.class.isAssignableFrom(clazz)) {
+            EnumSet<?> originalEnumSet = (EnumSet<?>) original;
+            EnumSet<?> copyEnumSet = EnumSet.copyOf(originalEnumSet);
+            copiedObjects.put(original, copyEnumSet);
+            return copyEnumSet;
+        }
+
+
+        if (Collection.class.isAssignableFrom(clazz)) {
+            Collection<?> originalCollection = (Collection<?>) original;
+            Collection<Object> copyCollection = createCollectionInstance(clazz, originalCollection.size());
+            copiedObjects.put(original, copyCollection);
+
+            for (Object item : originalCollection) {
+                copyCollection.add(deepCopyRecursive(item, copiedObjects));
+            }
+            return copyCollection;
+        }
+
+
+        if (clazz.isArray()) {
+            int length = Array.getLength(original);
+            Object arrayCopy = Array.newInstance(clazz.getComponentType(), length);
+            copiedObjects.put(original, arrayCopy);
+
+            for (int i = 0; i < length; i++) {
+                Array.set(arrayCopy, i, deepCopyRecursive(Array.get(original, i), copiedObjects));
+            }
+            return arrayCopy;
+        }
+
         if (clazz.isPrimitive() || clazz == String.class || clazz.isEnum() ||
                 Number.class.isAssignableFrom(clazz) || Boolean.class.isAssignableFrom(clazz) ||
                 Character.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz) ||
@@ -99,14 +101,7 @@ public class DeepCopy {
             return original;
         }
 
-        Object copy;
-        try {
-            copy = clazz.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException e) {
-            copy = createInstanceWithParams(clazz, original);
-        }
-
-        copiedObjects.put(original, copy);
+        Object copy = createInstanceWithParams(clazz);
 
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
@@ -114,6 +109,8 @@ public class DeepCopy {
             Object fieldCopy = deepCopyRecursive(fieldValue, copiedObjects);
             field.set(copy, fieldCopy);
         }
+
+        copiedObjects.put(original, copy);
 
         return copy;
     }
@@ -125,28 +122,41 @@ public class DeepCopy {
             return new PriorityQueue<>(size);
         } else if (LinkedHashSet.class.isAssignableFrom(collectionClass)) {
             return new LinkedHashSet<>(size);
-        } else if (Queue.class.isAssignableFrom(collectionClass)) {
-            return new LinkedList<>();
-        } else if (SortedSet.class.isAssignableFrom(collectionClass)) {
+        } else if (PriorityQueue.class.isAssignableFrom(collectionClass)) {
+            return new PriorityQueue<>();
+        } else if (TreeSet.class.isAssignableFrom(collectionClass)) {
             return new TreeSet<>();
-        } else if (Set.class.isAssignableFrom(collectionClass)) {
-            return new HashSet<>(size);
-        } else if (List.class.isAssignableFrom(collectionClass)) {
-            return new ArrayList<>(size);
-        } else if (Collection.class.isAssignableFrom(collectionClass)) {
-            return (Collection<Object>) collectionClass.getDeclaredConstructor().newInstance();
-        } else {
+        } else if (TreeSet.class.isAssignableFrom(collectionClass)) {
+            return new TreeSet<>();
+        }
+
+        try {
+            return (Collection<Object>) createInstanceWithParams(collectionClass);
+        } catch (InaccessibleObjectException | IllegalAccessException e) {
+            if (Set.class.isAssignableFrom(collectionClass)) {
+                return new HashSet<>(size);
+            } else if (List.class.isAssignableFrom(collectionClass)) {
+                return new ArrayList<>(size);
+            }
             throw new IllegalArgumentException("Unknown Collection type: " + collectionClass);
         }
+
     }
 
     private static Map<Object, Object> createMapInstance(Class<?> mapClass) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        if (SortedMap.class.isAssignableFrom(mapClass)) {
-            return new TreeMap<>();
-        } else if (Map.class.isAssignableFrom(mapClass)) {
-            return new HashMap<>();
-        } else {
-            throw new IllegalArgumentException("Unknown Map type: " + mapClass);
+        try {
+            if (mapClass.getName().startsWith("java.util.ImmutableCollections$Map1")) {
+                return new HashMap<>();
+            }
+            return (Map<Object, Object>) createInstanceWithParams(mapClass);
+        } catch (InaccessibleObjectException e) {
+            if (SortedMap.class.isAssignableFrom(mapClass)) {
+                return new TreeMap<>();
+            } else if (Map.class.isAssignableFrom(mapClass)) {
+                return new HashMap<>();
+            } else {
+                throw new IllegalArgumentException("Unknown Map type: " + mapClass);
+            }
         }
     }
 
@@ -173,19 +183,24 @@ public class DeepCopy {
         return null;
     }
 
-    private static Object createInstanceWithParams(Class<?> clazz, Object original) throws IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-        for (Constructor<?> constructor : constructors) {
-            constructor.setAccessible(true);
-            Class<?>[] paramTypes = constructor.getParameterTypes();
-            Object[] params = new Object[paramTypes.length];
+    private static Object createInstanceWithParams(Class<?> clazz) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException e) {
+            Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+            for (Constructor<?> constructor : constructors) {
+                constructor.setAccessible(true);
+                Class<?>[] paramTypes = constructor.getParameterTypes();
+                Object[] params = new Object[paramTypes.length];
 
-            for (int i = 0; i < paramTypes.length; i++) {
-                params[i] = getDefaultValue(paramTypes[i]);
+                for (int i = 0; i < paramTypes.length; i++) {
+                    params[i] = getDefaultValue(paramTypes[i]);
+                }
+
+                return constructor.newInstance(params);
             }
-
-            return constructor.newInstance(params);
         }
+
         throw new IllegalArgumentException("No suitable constructor found for class: " + clazz.getName());
     }
 

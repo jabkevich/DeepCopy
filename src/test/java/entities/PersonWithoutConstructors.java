@@ -1,58 +1,28 @@
 package entities;
 
-import list.CustomList;
-import list.CustomQueue;
-import map.CustomMap;
-
 import java.time.Instant;
 import java.util.*;
 
 /**
  * @author jabkevich
  */
-public class Person implements Comparable<Person> {
-
-    private CustomQueue<Notification> customQueue;
-    private CustomList<Person> customList;
-    private SortedMap<Person, Instant> views;
-    private CustomMap<String, Person> customMap;
-    private final int age;
-    private final String name;
+public class PersonWithoutConstructors implements Comparable<PersonWithoutConstructors> {
+    private int age;
+    private String name;
 
     private Contact[] contacts;
     private List<Message> messages;
     private SortedSet<Person> subscribers;
+    private SortedMap<Person, Instant> views;
     private Queue<Notification> notifications;
 
 
-
-    public Person(int age, String name) {
+    public void setAge(int age) {
         this.age = age;
+    }
+
+    public void setName(String name) {
         this.name = name;
-    }
-
-    public CustomMap<String, Person> getCustomMap() {
-        return customMap;
-    }
-
-    public CustomQueue<Notification> getCustomQueue() {
-        return customQueue;
-    }
-
-    public void setCustomQueue(CustomQueue<Notification> customQueue) {
-        this.customQueue = customQueue;
-    }
-
-    public CustomList<Person> getCustomList() {
-        return customList;
-    }
-
-    public void setCustomList(CustomList<Person> customList) {
-        this.customList = customList;
-    }
-
-    public void setCustomMap(CustomMap<String, Person> customMap) {
-        this.customMap = customMap;
     }
 
     public void setViews(SortedMap<Person, Instant> views) {
@@ -107,7 +77,7 @@ public class Person implements Comparable<Person> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Person person = (Person) o;
+        PersonWithoutConstructors person = (PersonWithoutConstructors) o;
 
         if (age != person.age) return false;
         if (!name.equals(person.name)) return false;
@@ -117,7 +87,6 @@ public class Person implements Comparable<Person> {
         if (!Objects.equals(subscribers, person.subscribers)) return false;
         if (!Objects.equals(views, person.views)) return false;
         if (!Objects.equals(notifications, person.notifications)) return false;
-        if (!Objects.equals(customMap, person.customMap)) return false;
 
         return true;
     }
@@ -130,7 +99,7 @@ public class Person implements Comparable<Person> {
     }
 
     @Override
-    public int compareTo(Person o) {
+    public int compareTo(PersonWithoutConstructors o) {
         return Integer.compare(age, o.age);
     }
 }
