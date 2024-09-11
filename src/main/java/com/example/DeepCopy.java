@@ -14,13 +14,17 @@ final public class DeepCopy {
             InvocationTargetException,
             NoSuchMethodException {
         Map<Object, Object> copiedObjects = new IdentityHashMap<>();
-        return deepCopyRecursive(original, copiedObjects);
+        try {
+            return deepCopyRecursive(original, copiedObjects);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static Object deepCopyRecursive(
             Object original,
             Map<Object, Object> copiedObjects
-    ) throws IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    ) throws Exception {
 
         if (original == null) {
             return null;
@@ -99,6 +103,10 @@ final public class DeepCopy {
                 Character.class.isAssignableFrom(clazz) || Date.class.isAssignableFrom(clazz) ||
                 clazz.getPackage().getName().startsWith("java.")) {
             return original;
+        }
+
+        if (clazz.isRecord()) {
+            return deepCopyRecord(original, copiedObjects);
         }
 
         Object copy = createInstanceWithParams(clazz);
@@ -181,6 +189,31 @@ final public class DeepCopy {
             }
         }
         return null;
+    }
+
+    private static <T> T deepCopyRecord(T original, Map<Object, Object> copiedObjects) throws Exception {
+        Class<?> clazz = original.getClass();
+        Constructor<?> canonicalConstructor = clazz.getDeclaredConstructor(
+                Arrays.stream(clazz.getRecordComponents())
+                        .map(rc -> rc.getType())
+                        .toArray(Class<?>[]::new)
+        );
+        canonicalConstructor.setAccessible(true);
+
+        Object[] recordValues = Arrays.stream(clazz.getRecordComponents())
+                .map(rc -> {
+                    try {
+                        Field field = clazz.getDeclaredField(rc.getName());
+                        field.setAccessible(true);
+                        Object fieldValue = field.get(original);
+                        return deepCopyRecursive(fieldValue, copiedObjects);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .toArray();
+
+        return (T) canonicalConstructor.newInstance(recordValues);
     }
 
     private static Object createInstanceWithParams(Class<?> clazz) throws IllegalAccessException, InvocationTargetException, InstantiationException {

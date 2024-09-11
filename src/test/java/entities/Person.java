@@ -12,6 +12,9 @@ import java.util.*;
  */
 public class Person implements Comparable<Person> {
 
+
+    private TestRecord testRecord;
+
     private CustomQueue<Notification> customQueue;
     private CustomList<Person> customList;
     private SortedMap<Person, Instant> views;
@@ -26,9 +29,15 @@ public class Person implements Comparable<Person> {
 
 
 
+
+
     public Person(int age, String name) {
         this.age = age;
         this.name = name;
+    }
+
+    public void setTestRecord(TestRecord testRecord) {
+        this.testRecord = testRecord;
     }
 
     public CustomMap<String, Person> getCustomMap() {

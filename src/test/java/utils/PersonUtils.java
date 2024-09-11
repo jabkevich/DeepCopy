@@ -94,6 +94,9 @@ public class PersonUtils {
 
         person.setCustomQueue(customQueue);
 
+
+        person.setTestRecord(new TestRecord(getRandomAge(), "Bob"));
+
         return person;
     }
     public static PersonWithoutConstructors getTestPersonWithoutContructors() {
